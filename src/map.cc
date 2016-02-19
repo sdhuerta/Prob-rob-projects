@@ -125,8 +125,8 @@ float** allocate_float_map(int width, int height)
   for(i=0;i<height;i++)
     if((data[i]=(float*)malloc(width*sizeof(float)))==NULL)
       {
-	perror("allocate_float_map");
-	exit(10);
+      	perror("allocate_float_map");
+      	exit(10);
       }
   return data;
 }

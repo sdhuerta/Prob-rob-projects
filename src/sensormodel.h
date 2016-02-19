@@ -15,6 +15,14 @@ using namespace geometry_msgs;
    r is the distance reading in meters (z)
 */
    
+typedef struct{
+  float z_hit;
+  float z_short;
+  float z_max;
+  float z_rand;
+  float phi_hit;
+  float lambda_short;
+}Theta ; 
 
 
 double sensormodel(MapCell &cell, // pose of the robot

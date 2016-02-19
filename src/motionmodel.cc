@@ -54,7 +54,7 @@ float motion_model_velocity(MapCell &st,    // state at time t (contains row, co
 		  					MapStruct *map) 
 {
 	float v,w;
-	int time_step;
+	float time_step;
 	float mu, col, row, r;
 	float dis, theta_del;
 	float v_hat, w_hat, gamma_hat ;
@@ -62,12 +62,12 @@ float motion_model_velocity(MapCell &st,    // state at time t (contains row, co
 
 	float prob_v, prob_w, prob_gamma;
 
-	static time_step ;
+	// float_time = odom.header.stamp.nsec ;
+
+	time_step = 1.0 ; // We need to change this to take the header
 
 	v = odom.twist.twist.linear.x ;
 	w = odom.twist.twist.angular.z ;
-
-	time_step = odom.header.stamp.nsec ;
 
 	mu = 0.5 * ((st.col - stp.col)cos(st.theta) + (st.row - stp.row)sin(st.theta))
 		 	   / ((st.row - stp.row)cos(st.theta) - (st.col - stp.col)sin(st.theta)) ;

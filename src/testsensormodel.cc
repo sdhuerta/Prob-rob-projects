@@ -96,30 +96,30 @@ int main(int argc,char **argv)
     {
       mapdata = allocate_float_map(width,height);
       for(row=0;row<height;row++)
-	for(col=0;col<width;col++)
-	  if(map->rows[row][col]>128)
-	    {
-	      cell.row = row;
-	      cell.col = col;
-	      cell.theta = theta * M_PI/180;
+      	for(col=0;col<width;col++)
+      	  if(map->rows[row][col]>128)
+      	    {
+      	      cell.row = row;
+      	      cell.col = col;
+      	      cell.theta = theta * M_PI/180;
 
-	      // // convert from current cell to a pose
-	      // pose = CellToPose(map,cell);
+      	      // // convert from current cell to a pose
+      	      // pose = CellToPose(map,cell);
 
-	      // // apply the twist to adjust sensor location
-	      
+      	      // // apply the twist to adjust sensor location
+      	      
 
-	      // // convert back into cell
-	      // cell = PoseToCell(map,pose);
-	      
-	      mapdata[row][col] = sensormodel(cell,r,map);
-	    }
-	  else
-	    mapdata[row][col] = 0.0;
-      sprintf(ofname,"%s%03d.pgm",basename,theta);
-      printf("writing %s\n",ofname);
-      write_float_map(ofname,mapdata,width,height,0);
-      free_float_map(mapdata,height);
+      	      // // convert back into cell
+      	      // cell = PoseToCell(map,pose);
+      	      
+      	      mapdata[row][col] = sensormodel(cell,r,map);
+      	    }
+      	  else
+      	    mapdata[row][col] = 0.0;
+            sprintf(ofname,"%s%03d.pgm",basename,theta);
+            printf("writing %s\n",ofname);
+            write_float_map(ofname,mapdata,width,height,0);
+            free_float_map(mapdata,height);
     }
 
   return 0;

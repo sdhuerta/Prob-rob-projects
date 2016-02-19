@@ -18,5 +18,7 @@ float motionmodel(MapCell &st,    // state at time t
 		  Odometry &odom, // odometry from t-1 to t
 		  MapStruct *map);
 
+float prob_triangular(float linear_vel, float angular_vel);
+
 #endif
 
