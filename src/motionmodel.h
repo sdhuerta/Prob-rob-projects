@@ -23,7 +23,8 @@ using namespace geometry_msgs;
 float motionmodel(MapCell &st,    // state at time t
 		  MapCell &stp,  // state at time t-1
 		  Odometry &odom, // odometry from t-1 to t
-		  MapStruct *map);
+		  MapStruct *map
+		  float dt);
 
 float prob_triangular(float linear_vel, float angular_vel);
 

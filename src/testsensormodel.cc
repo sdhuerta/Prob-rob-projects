@@ -126,6 +126,7 @@ int main(int argc,char **argv)
                 mapdata[ang][row][col] = 0.0;
             }
       }
+  
     }
 
   finalmapdata = allocate_float_map(width,height);

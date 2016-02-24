@@ -4,6 +4,8 @@
 #include <png.h>
 #include <ros/ros.h>
 #include <geometry_msgs/Pose.h>
+#include <ros/ros.h>
+#include <geometry_msgs/Pose.h>
 #include <geometry_msgs/Pose2D.h>
 using namespace ros;
 using namespace geometry_msgs;

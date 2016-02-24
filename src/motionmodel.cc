@@ -43,17 +43,6 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 		  MapStruct *map
 		  float dt )
 {
-  Twist twist = odom.twist.twist; // make it easier to read...
-
-  // this is here just to give it something to do.
-  return (st.row*st.col)/(float)(map->width*map->height);
-}
-
-float motion_model_velocity(MapCell &st,    // state at time t (contains row, col, theta)
-		  					MapCell &stp,  // state at time t-1 (contains row, col, theta)
-		  					Odometry &odom, // odometry from t-1 to t  (u = odom.twist.twist.linear.x, w = odom.twist.twist.angular.z )
-		  					MapStruct *map) 
-{
 	float v,w;
 	float time_step;
 	float mu, col, row, r;
