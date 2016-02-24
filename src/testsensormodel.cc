@@ -1,9 +1,10 @@
 /* Author: Larry Pyeatt
    Date: 1-27-2016
 
-   This program tests the sensormodel function, by calculating
-   p(x,y,theta|z) for each cell in an occupancy grid map.  It creates
-   36 maps, each with a unique value for theta.
+   This program tests the sensormodel function by calculating
+   p(s|z,map) for each cell in an occupancy grid map.  It creates
+   36 maps, each with a unique value for theta, then combines
+   them for the final output.
 */
 
 /* include system headers */
@@ -21,33 +22,34 @@
 /* function to print usage message */
 void usage(char *name)
 {
-  fprintf(stderr,"Usage: %s map_file res dx dy a r\n",name);
+  fprintf(stderr,"Usage: %s map_file res range_file\n",name);
   fprintf(stderr," map_file is a PNG file used as a map in"
-	  " the stage simulator.\n");
-  fprintf(stderr," res is the width and height of each cell of the map,\n");
-  fprintf(stderr," dx is the x coordinate of the sensor measured from the center of the robot,\n");
-  fprintf(stderr," dy is the y coordinate of the sensor measured from the center of the robot,\n");
-  fprintf(stderr," a is angle in degrees of the sensor beam (robot coordinates), and\n");
-  fprintf(stderr," r is the range reading received.\n");
-  fprintf(stderr,"Distances are given in integer meters\n");
-  fprintf(stderr,"Angles are given in integer tenths of a degree.\n");
+    " the stage simulator.\n");
+  fprintf(stderr," res is the width and height of each cell of the map, and \n");
+  fprintf(stderr," range_file is a file of angle and range readings.\n");
+  fprintf(stderr,"Distances are given in meters\n");
+  fprintf(stderr,"Angles are given in integer degrees.\n");
   exit(100);
 }
 
 
+
+#define NUM_ANGLES 36
+
 int main(int argc,char **argv)
 {
   MapStruct *map;
-  float **mapdata;
+  float ***mapdata;
+  float **finalmapdata;
   char *ofname,*basename,*tmpcp;
   int width,height;
-  int res,dx,dy,a,r;
-  int row,col,theta;
+  int res,dx,dy,a;
+  int row,col,ang;
+  double r,theta;
   MapCell cell;
-  Twist sensor_position;
   Pose pose;
 
-  if(argc != 7)
+  if(argc != 4)
     usage(argv[0]);
 
   /* read the occupancy grid map */
@@ -57,14 +59,6 @@ int main(int argc,char **argv)
   height = map->height;
   map->res = atof(argv[2]);
   
-  sensor_position.linear.x = atof(argv[3]);
-  sensor_position.linear.y = atof(argv[4]);
-  sensor_position.linear.z = 0.0;
-  sensor_position.angular.x = 0.0;
-  sensor_position.angular.y = 0.0;
-  sensor_position.angular.z = atoi(argv[5]) * M_PI/180.0;
-
-  r = atof(argv[6]);
 
   /* extract the base map file name without extension or path */
   if((basename=(char*)malloc(strlen(argv[1])+16))==NULL)
@@ -90,37 +84,86 @@ int main(int argc,char **argv)
     tmpcp = ofname;
   strcpy(basename,tmpcp);
 
-  /* create one probability map for each theta between 0 and 350 in 10
-     degree increments */
-  for(theta=0;theta<360;theta+=10)
+  float tmp;
+
+  // open file for reading angle and range data
+  FILE *sensorfile;
+  if((sensorfile=fopen(argv[3],"r"))==NULL)
     {
-      mapdata = allocate_float_map(width,height);
-      for(row=0;row<height;row++)
-      	for(col=0;col<width;col++)
-      	  if(map->rows[row][col]>128)
-      	    {
-      	      cell.row = row;
-      	      cell.col = col;
-      	      cell.theta = theta * M_PI/180;
-
-      	      // // convert from current cell to a pose
-      	      // pose = CellToPose(map,cell);
-
-      	      // // apply the twist to adjust sensor location
-      	      
-
-      	      // // convert back into cell
-      	      // cell = PoseToCell(map,pose);
-      	      
-      	      mapdata[row][col] = sensormodel(cell,r,map);
-      	    }
-      	  else
-      	    mapdata[row][col] = 0.0;
-            sprintf(ofname,"%s%03d.pgm",basename,theta);
-            printf("writing %s\n",ofname);
-            write_float_map(ofname,mapdata,width,height,0);
-            free_float_map(mapdata,height);
+      perror(argv[0]);
+      exit(25);
     }
+
+  mapdata = (float ***)malloc(NUM_ANGLES*sizeof(float**));
+  for(ang=0;ang<NUM_ANGLES;ang++)
+    mapdata[ang] = allocate_float_map(width,height);
+  
+  for(ang=0;ang<NUM_ANGLES;ang++)
+    for(row=0;row<height;row++)
+      for(col=0;col<width;col++)
+  mapdata[ang][row][col] = 1.0;
+  
+  while(fscanf(sensorfile,"%lf%lf",&theta,&r)==2)
+    {
+      for(ang=0;ang<NUM_ANGLES;ang++)
+      // for(ang=0;ang<1;ang++) //used for testing an individual angle
+      {
+        for(row=0;row<height;row++)
+          for(col=0;col<width;col++)
+            {
+              if(map->rows[row][col]>128)
+                {
+                  cell.row = row;
+                  cell.col = col;
+                  cell.theta = theta + ((ang*M_PI*2.0)/NUM_ANGLES);
+                  tmp = sensormodel(cell,r,map);
+                  if(tmp>=0.0)
+                    mapdata[ang][row][col] *= tmp;
+                  else
+                    mapdata[ang][row][col] = 0.0;
+                }
+              else
+                mapdata[ang][row][col] = 0.0;
+            }
+      }
+    }
+
+  finalmapdata = allocate_float_map(width,height);
+  for(row=0;row<height;row++)
+    for(col=0;col<width;col++)
+      finalmapdata[row][col] = 0.0;
+  
+  
+  for(ang=0;ang<NUM_ANGLES;ang++)
+    for(row=0;row<height;row++)
+      for(col=0;col<width;col++)
+  finalmapdata[row][col]+= mapdata[ang][row][col];
+
+  double max = finalmapdata[0][0];
+  for(row=0;row<height;row++)
+    for(col=0;col<width;col++)
+      if(finalmapdata[row][col]>max)
+  max = finalmapdata[row][col];
+
+  printf("max is %lf\n",max);
+  for(row=0;row<height;row++)
+    for(col=0;col<width;col++)
+      finalmapdata[row][col]/=max;
+
+    
+  // add walls
+  for(row=0;row<height;row++)
+    for(col=0;col<width;col++)
+      if(map->rows[row][col]<128)
+  finalmapdata[row][col] = 1.0;
+
+
+  //  sprintf(ofname,"%s%03d.pgm",basename,theta);
+  sprintf(ofname,"%s.pgm",basename);
+  printf("writing %s\n",ofname);
+  write_float_map(ofname,finalmapdata,width,height,1);
+
+  free_float_map(finalmapdata,height);
 
   return 0;
 }

@@ -15,10 +15,10 @@ void asciidumpmap(MapStruct *m)
   for(r=0;r<m->height;r++)
     {
       for(c=0;c<m->width;c++)
-	if(m->rows[r][c])
-	  printf("1");
-	else
-	  printf("0");
+  if(m->rows[r][c])
+    printf("1");
+  else
+    printf("0");
       printf("\n");
     }
 }
@@ -112,6 +112,27 @@ MapStruct* readmap(char **argv,int arg)
 
 
   
+
+/* Convert Pose to map cell */
+MapCell PoseToCell(MapStruct *map, Pose2D &pose)
+{
+  MapCell cell;
+  cell.theta = pose.theta;
+  cell.col = roundf(pose.x/map->res);
+  cell.row = roundf(pose.y/map->res);
+  return cell;
+}
+
+/* Convert map cell to Pose by finding the center point of the cell */
+Pose2D CellToPose(MapStruct *map, MapCell &cell)
+{
+  Pose2D pose;
+  pose.x = cell.col * map->res - 0.5*map->res;
+  pose.y = cell.row * map->res - 0.5*map->res;
+  pose.theta = cell.theta;
+  return pose;
+}
+
 /* These functions allocate and free a 2D array of floats */
 float** allocate_float_map(int width, int height)
 {
@@ -125,8 +146,8 @@ float** allocate_float_map(int width, int height)
   for(i=0;i<height;i++)
     if((data[i]=(float*)malloc(width*sizeof(float)))==NULL)
       {
-      	perror("allocate_float_map");
-      	exit(10);
+  perror("allocate_float_map");
+  exit(10);
       }
   return data;
 }
@@ -169,19 +190,19 @@ void write_float_map(char *filename,float **data,int width,int height,int autosc
       max=data[0][0];
       min=data[0][0];
       for(row=0;row<height;row++)
-	for(col=0;col<width;col++)
-	  {
-	    if(data[row][col]>max)
-	      max = data[row][col];
-	    if(data[row][col]<min)
-	      min = data[row][col];
-	  }
+  for(col=0;col<width;col++)
+    {
+      if(data[row][col]>max)
+        max = data[row][col];
+      if(data[row][col]<min)
+        min = data[row][col];
+    }
     }
   
   for(row=0;row<height;row++)
     {
       for(col=0;col<width;col++)
-	irow[col] = ((data[row][col]-min)/(max-min))*255.0;
+  irow[col] = ((data[row][col]-min)/(max-min))*255.0;
       fwrite(irow,sizeof(unsigned char),width,f);
     }
 
@@ -190,14 +211,81 @@ void write_float_map(char *filename,float **data,int width,int height,int autosc
   free(irow);
 }
 
-
-/* Convert Pose to map cell */
-MapCell PoseToCell(MapStruct *map, Pose &pose)
+/* These functions allocate and free a 2D array of doubles */
+double** allocate_double_map(int width, int height)
 {
+  int i;
+  double** data;
+  if((data=(double**)malloc(height*sizeof(double*)))==NULL)
+    {
+      perror("allocate_double_map");
+      exit(10);
+    }
+  for(i=0;i<height;i++)
+    if((data[i]=(double*)malloc(width*sizeof(double)))==NULL)
+      {
+  perror("allocate_double_map");
+  exit(10);
+      }
+  return data;
 }
 
-/* Convert map cell to Pose by finding the center point of the cell */
-Pose CellToPose(MapStruct *map, MapCell &cell)
+void free_double_map(double** mapdata,int height)
 {
+  for(int i=0;i<height;i++)
+    free(mapdata[i]);
+  free(mapdata);
+}
+  
+
+/* write_double_map scales the values in a double map to between 0 and
+   255, then writes the data as a Portable Gray Map pgm file.
+   Filename should end in ".pgm" when this function is called. */
+void write_double_map(char *filename,double **data,int width,int height,int autoscale)
+{
+  int row,col;
+  double max=1.0;
+  double min=0.0;
+  FILE *f;
+  unsigned char *irow;
+
+  if((f=fopen(filename,"w"))==NULL)
+    {
+      perror(filename);
+      exit(11);
+    }
+
+  fprintf(f,"P5\n%d %d\n255\n",width,height);
+  
+  if((irow=(unsigned char*)malloc(width*sizeof(unsigned char)))==NULL)
+    {
+      perror("write_double_map");
+      exit(12);
+    }
+  
+  if(autoscale)
+    {
+      max=data[0][0];
+      min=data[0][0];
+      for(row=0;row<height;row++)
+  for(col=0;col<width;col++)
+    {
+      if(data[row][col]>max)
+        max = data[row][col];
+      if(data[row][col]<min)
+        min = data[row][col];
+    }
+    }
+  
+  for(row=0;row<height;row++)
+    {
+      for(col=0;col<width;col++)
+  irow[col] = ((data[row][col]-min)/(max-min))*255.0;
+      fwrite(irow,sizeof(unsigned char),width,f);
+    }
+
+  
+  fclose(f);
+  free(irow);
 }
 

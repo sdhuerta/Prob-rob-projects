@@ -40,7 +40,8 @@ geometry_msgs/TwistWithCovariance twist
 float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 		  MapCell &stp,  // state at time t-1 (row, col, Theta)
 		  Odometry &odom, // odometry from t-1 to t 
-		  MapStruct *map)
+		  MapStruct *map
+		  float dt )
 {
   Twist twist = odom.twist.twist; // make it easier to read...
 
@@ -64,7 +65,7 @@ float motion_model_velocity(MapCell &st,    // state at time t (contains row, co
 
 	// float_time = odom.header.stamp.nsec ;
 
-	time_step = 1.0 ; // We need to change this to take the header
+	time_step = dt ; // We need to change this to take the header
 
 	v = odom.twist.twist.linear.x ;
 	w = odom.twist.twist.angular.z ;

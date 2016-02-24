@@ -7,6 +7,13 @@
 using namespace nav_msgs;
 using namespace geometry_msgs;
 
+#define ALPHA_1 10.0
+#define ALPHA_2 10.0
+#define ALPHA_3 0.5
+#define ALPHA_4 0.5
+#define ALPHA_5 0.5
+#define ALPHA_6 0.5
+
 /* 
    motionmodel calculates p(s_t|s_{t-1},a_{t-1},m)
 
