@@ -26,8 +26,14 @@ double sensormodel(MapCell &cell, // pose of the robot
 {
   // this is here just to give it something to do.  
   // return (cell.row*cell.col)/(float)(map->width*map->height);
+  double r_hit, p_hit, p_short, p_max, p_rand ;
 
-  r_hit = ray_cast(cell, r, map) ;
+  // if(map->rows[cell.row][cell.col] == 0)
+  //   r_hit = 0 ;
+  // else
+    r_hit = r ;//ray_cast(cell, r, map) ;
+
+  //printf("x: %5d y: %5d Theta: %6.4f r_hit: %6.4lf\n", cell.col, cell.row, cell.theta, r_hit);
 
   p_hit = ALPHA_1 * calc_p_hit(r, r_hit) ;
   p_short = ALPHA_2 * calc_p_short(r, r_hit) ;
@@ -38,20 +44,20 @@ double sensormodel(MapCell &cell, // pose of the robot
 }
 
 
-double calc_p_hit(r, r_hit)
+double calc_p_hit(double r, double r_hit)
 {
   double p_hit;
   double e_term;
 
-  e = -.5 * pow((r - r_hit),2.0) / B ;
+  e_term = -.5 * pow((r - r_hit),2.0) / B ;
 
-  p_hit = ETA * 1 / sqrt(2 * PI * B) * exp(e) ;
+  p_hit = ETA * 1 / sqrt(2 * PI * B) * exp(e_term) ;
 
   return p_hit ;
 }
 
 
-double calc_p_short(r, r_hit)
+double calc_p_short(double r, double r_hit)
 {
   if( r < r_hit )
     return ETA * LAMBDA * exp(-LAMBDA * r); 
@@ -82,14 +88,16 @@ double calc_p_rand()
 double ray_cast(MapCell &cell, double range, MapStruct *map) 
 {
   int x1, x2, y1, y2;
-  int dx1, dx2, dy1, dy2 = 0;
+  int dx1 = 0, dx2 = 0, dy1 = 0, dy2 = 0;
   int short_side, long_side ;
+  int rise, run ;
+  float r = 0;
 
   x1 = cell.col;
   y1 = cell.row;
 
-  x2 = cell.col * cos(cell.theta) ;
-  y2 = cell.row * sin(cell.theta) ;
+  x2 = cell.col + range * cos(cell.theta) ;
+  y2 = cell.row + range * sin(cell.theta) ;
 
   rise = y2 - y1;
   run = x2 - x1;
@@ -112,48 +120,49 @@ double ray_cast(MapCell &cell, double range, MapStruct *map)
 
   if(run < 0)
   {
-    dx2 = -1
-    dx = -1 ;
+    dx2 = -1 ;
+    dx1 = -1 ;
   }
   else
   {
     dx2 = 1 ;
-    dx = 1 ;
+    dx1 = 1 ;
   }
   if(rise < 0)
-    dy = -1;
+    dy1 = -1;
   else
-    dy = 1;
+    dy1 = 1;
 
   int numer = long_side >> 1 ;
 
   for(int i = 0; i < long_side; i++ )
-  {
-    char 
+  { 
     // actual find
-    if(MapCell.rows[y1][x1] == 255 
-       || y1 > MapCell.height 
-       || x1 > MapCell.height)
+    if(y1 > map->height - 1 || x1 > map->width - 1 ||
+       y1 < 0 || x1 < 0 || map->rows[y1][x1] == 0 )
     {
-      return range ;
+      r = sqrt(pow(cell.row - y1,2) + pow(cell.col - x1,2));
 
+      return r ;
+      
     }
+
     numer += short_side ;
     if( numer >= long_side)
     {
       numer -= long_side ;
       x1 += dx1 ;
       y1 += dy1 ;
-      range++ ;
     }
     else
     {
       x1 += dx2 ;
       y1 += dx2 ;
-      range++ ;
     }
   }
 
-  return range ;
+  r = sqrt(pow(cell.row - y1,2) + pow(cell.col - x1,2));
+
+  return r ;
 
 }

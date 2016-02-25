@@ -40,7 +40,7 @@ geometry_msgs/TwistWithCovariance twist
 float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 		  MapCell &stp,  // state at time t-1 (row, col, Theta)
 		  Odometry &odom, // odometry from t-1 to t 
-		  MapStruct *map
+		  MapStruct *map,
 		  float dt )
 {
 	float v,w;
@@ -59,8 +59,7 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 	v = odom.twist.twist.linear.x ;
 	w = odom.twist.twist.angular.z ;
 
-	mu = 0.5 * ((st.col - stp.col)cos(st.theta) + (st.row - stp.row)sin(st.theta))
-		 	   / ((st.row - stp.row)cos(st.theta) - (st.col - stp.col)sin(st.theta)) ;
+	mu = 0.5 * ((st.col - stp.col) * cos(st.theta) + (st.row - stp.row) * sin(st.theta)) / ((st.row - stp.row) * cos(st.theta) - (st.col - stp.col) * sin(st.theta)) ;
 
 	col = (st.col + stp.col)/2.0 + mu * (st.row - stp.row) ;
 
@@ -81,7 +80,9 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 
 	prob_w = prob_triangular((w-w_hat), (alpha_3 * abs(v) + alpha_4 * abs(w))) ;
 
-	prob_gamma = prob_triangular(gamma_hat, (alpha_5 * abs(v) + alpha_6 * abs(w)))
+	prob_gamma = prob_triangular(gamma_hat, (alpha_5 * abs(v) + alpha_6 * abs(w))) ;
+
+	//printf( "%6.4lf %6.4lf %6.4lf \n", prob_v, prob_w, prob_gamma);
 
 
 	return prob_v * prob_w * prob_gamma ;
@@ -91,6 +92,8 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 
 float prob_triangular(float linear_vel, float angular_vel)
 {
+
+	//printf("%10f\t%10f\n",linear_vel, angular_vel) ;
 	float prob ;
 	float eval_linear = abs(linear_vel);
 	float eval_angular = pow(6 * angular_vel, 2);

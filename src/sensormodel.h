@@ -42,8 +42,8 @@ typedef struct{
 }Theta ; 
 
 
-double calc_p_hit(r, r_hit);
-double calc_p_short(r, r_hit);
+double calc_p_hit(double r, double r_hit);
+double calc_p_short(double r, double r_hit);
 double calc_p_max();
 double calc_p_rand();
 double ray_cast(MapCell &cell, double range, MapStruct *map) ;
