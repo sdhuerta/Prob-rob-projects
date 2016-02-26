@@ -31,7 +31,7 @@ double sensormodel(MapCell &cell, // pose of the robot
   // if(map->rows[cell.row][cell.col] == 0)
   //   r_hit = 0 ;
   // else
-    r_hit = r ;//ray_cast(cell, r, map) ;
+  r_hit = ray_cast(cell, r, map) ;
 
   //printf("x: %5d y: %5d Theta: %6.4f r_hit: %6.4lf\n", cell.col, cell.row, cell.theta, r_hit);
 
@@ -91,13 +91,15 @@ double ray_cast(MapCell &cell, double range, MapStruct *map)
   int dx1 = 0, dx2 = 0, dy1 = 0, dy2 = 0;
   int short_side, long_side ;
   int rise, run ;
-  float r = 0;
+  float theta, r = 0;
 
   x1 = cell.col;
-  y1 = cell.row;
+  y1 = map->height - cell.row;
 
-  x2 = cell.col + range * cos(cell.theta) ;
-  y2 = cell.row + range * sin(cell.theta) ;
+  theta = -cell.theta ;
+
+  x2 = cell.col + range * cos(theta) ;
+  y2 = cell.row + range * sin(theta) ;
 
   rise = y2 - y1;
   run = x2 - x1;

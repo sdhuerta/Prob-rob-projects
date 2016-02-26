@@ -43,14 +43,18 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 		  MapStruct *map,
 		  float dt )
 {
-	float v,w;
-	float time_step;
-	float mu, col, row, r;
-	float dis, theta_del;
-	float v_hat, w_hat, gamma_hat ;
-	float alpha_1, alpha_2, alpha_3, alpha_4, alpha_5, alpha_6 ;
+	if( map->rows[st.row][st.col] == 0 )
+		return 0 ;
 
-	float prob_v, prob_w, prob_gamma;
+	double v,w;
+	double time_step;
+	double mu, col, row, r;
+	double dis, theta_del;
+	double v_hat, w_hat, gamma_hat ;
+
+	double prob_v, prob_w, prob_gamma;
+
+	
 
 	// float_time = odom.header.stamp.nsec ;
 
@@ -59,28 +63,29 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 	v = odom.twist.twist.linear.x ;
 	w = odom.twist.twist.angular.z ;
 
-	mu = 0.5 * ((st.col - stp.col) * cos(st.theta) + (st.row - stp.row) * sin(st.theta)) / ((st.row - stp.row) * cos(st.theta) - (st.col - stp.col) * sin(st.theta)) ;
+	mu = 0.5 * ((stp.col - st.col) * cos(stp.theta) + (stp.row - st.row) * sin(stp.theta)) / 
+			   ((stp.row - st.row) * cos(stp.theta) - (stp.col - st.col) * sin(stp.theta)) ;
 
-	col = (st.col + stp.col)/2.0 + mu * (st.row - stp.row) ;
+	col = (stp.col + st.col)/2.0 + mu * (stp.row - st.row) ;
 
-	row = (st.row + stp.row)/2.0 + mu * (stp.col - st.col) ;
+	row = (stp.row + st.row)/2.0 + mu * (st.col - stp.col) ;
 
-	dis = sqrt(pow(st.col - col, 2) + pow(st.row - row, 2)) ;
+	dis = sqrt(pow(stp.col - col, 2) + pow(stp.row - row, 2)) ;
 
-	theta_del = atan2(stp.row - row, stp.col - col) - 
-				atan2(st.row - row, st.col - col);
+	theta_del = atan2(st.row - row, st.col - col) - 
+				atan2(stp.row - row, stp.col - col);
 
 	v_hat = theta_del / time_step * dis ;
 
 	w_hat = theta_del / time_step ;
 
-	gamma_hat =  (stp.theta - st.theta) / time_step - w_hat ;
+	gamma_hat =  (st.theta - stp.theta) / time_step - w_hat ;
 
-	prob_v = prob_triangular((v-v_hat), (alpha_1 * abs(v) + alpha_2 * abs(w))) ; 
+	prob_v = prob_gauss((v-v_hat), (ALPHA_1 * abs(v) + ALPHA_2 * abs(w))) ; 
 
-	prob_w = prob_triangular((w-w_hat), (alpha_3 * abs(v) + alpha_4 * abs(w))) ;
+	prob_w = prob_gauss((w-w_hat), (ALPHA_3 * abs(v) + ALPHA_4 * abs(w))) ;
 
-	prob_gamma = prob_triangular(gamma_hat, (alpha_5 * abs(v) + alpha_6 * abs(w))) ;
+	prob_gamma = prob_gauss(gamma_hat, (ALPHA_5 * abs(v) + ALPHA_6 * abs(w)))	 ;
 
 	//printf( "%6.4lf %6.4lf %6.4lf \n", prob_v, prob_w, prob_gamma);
 
@@ -88,15 +93,19 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 	return prob_v * prob_w * prob_gamma ;
 }
 
+double prob_gauss(double linear_vel, double angular_vel)
+{
 
+	return exp( (-.5) * pow(linear_vel/angular_vel, 2) ) / (sqrt( 2 * M_PI) * angular_vel ) ;
+}
 
-float prob_triangular(float linear_vel, float angular_vel)
+double prob_triangular(double linear_vel, double angular_vel)
 {
 
 	//printf("%10f\t%10f\n",linear_vel, angular_vel) ;
-	float prob ;
-	float eval_linear = abs(linear_vel);
-	float eval_angular = pow(6 * angular_vel, 2);
+	double prob ;
+	double eval_linear = abs(linear_vel);
+	double eval_angular = pow(6 * angular_vel, 2);
 
 	if( eval_linear > eval_angular )
 		prob = 0;
