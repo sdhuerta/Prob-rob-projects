@@ -26,6 +26,12 @@ float motionmodel(MapCell &st,    // state at time t
 		  MapStruct *map,
 		  float dt);
 
+float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta)
+		  MapCell &stp,  // state at time t-1 (row, col, Theta)
+		  Odometry &odom, // odometry from t-1 to t 
+		  MapStruct *map,
+		  float dt );
+
 double prob_triangular(double linear_vel, double angular_vel);
 double prob_gauss(double linear_vel, double angular_vel) ;
 

@@ -43,43 +43,64 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 		  MapStruct *map,
 		  float dt )
 {
+	return veloctity_motion_model( st, stp, odom, map, dt );
+
+
+}
+
+float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta)
+		  MapCell &stp,  // state at time t-1 (row, col, Theta)
+		  Odometry &odom, // odometry from t-1 to t 
+		  MapStruct *map,
+		  float dt )
+{
 	if( map->rows[st.row][st.col] == 0 )
 		return 0 ;
+
 
 	double v,w;
 	double time_step;
 	double mu, col, row, r;
 	double dis, theta_del;
 	double v_hat, w_hat, gamma_hat ;
-
 	double prob_v, prob_w, prob_gamma;
 
-	
+	int x_prev = stp.col;
+	int y_prev = stp.row;
+	float theta_prev = stp.theta;
 
-	// float_time = odom.header.stamp.nsec ;
+	int x_curr = st.col;
+	int y_curr = st.row;
+	float theta_curr = st.theta;
 
 	time_step = dt ; // We need to change this to take the header
 
 	v = odom.twist.twist.linear.x ;
-	w = odom.twist.twist.angular.z ;
+	w = -odom.twist.twist.angular.z ;
 
-	mu = 0.5 * ((stp.col - st.col) * cos(stp.theta) + (stp.row - st.row) * sin(stp.theta)) / 
-			   ((stp.row - st.row) * cos(stp.theta) - (stp.col - st.col) * sin(stp.theta)) ;
+	mu = 0.5 * ((x_prev - x_curr) * cos(theta_prev) + (y_prev - y_curr) * sin(theta_prev)) / ((y_prev - y_curr) * cos(theta_prev) - (x_prev - x_curr) * sin(theta_prev)) ;
 
-	col = (stp.col + st.col)/2.0 + mu * (stp.row - st.row) ;
+	if( mu == 0 ||  isnan(mu) || isinf(mu) )
+	{ 
+		col = (x_curr + x_prev)/2.0 + (y_prev - y_curr) ;
+		row = (y_curr + y_prev)/2.0 + (x_curr - x_prev) ;
+	}
+	else
+	{
+		col = (x_curr + x_prev)/2.0 + mu * (y_prev - y_curr) ;
+		row = (x_curr + x_prev)/2.0 + mu * (x_curr - x_prev) ;
+	}
 
-	row = (stp.row + st.row)/2.0 + mu * (st.col - stp.col) ;
+	dis = sqrt(pow(x_prev - col, 2) + pow(y_prev - row, 2)) ;
 
-	dis = sqrt(pow(stp.col - col, 2) + pow(stp.row - row, 2)) ;
-
-	theta_del = atan2(st.row - row, st.col - col) - 
-				atan2(stp.row - row, stp.col - col);
+	theta_del = atan2(y_curr - row, x_curr - col) - 
+				atan2(y_prev - row, x_prev - col);
 
 	v_hat = theta_del / time_step * dis ;
 
 	w_hat = theta_del / time_step ;
 
-	gamma_hat =  (st.theta - stp.theta) / time_step - w_hat ;
+	gamma_hat =  (theta_curr - theta_prev) / time_step - w_hat ;
 
 	prob_v = prob_gauss((v-v_hat), (ALPHA_1 * abs(v) + ALPHA_2 * abs(w))) ; 
 
@@ -93,11 +114,15 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 	return prob_v * prob_w * prob_gamma ;
 }
 
+
+
 double prob_gauss(double linear_vel, double angular_vel)
 {
 
-	return exp( (-.5) * pow(linear_vel/angular_vel, 2) ) / (sqrt( 2 * M_PI) * angular_vel ) ;
+	return exp( (-0.5) * pow(linear_vel/angular_vel, 2) ) / (sqrt( 2 * M_PI) * angular_vel ) ;
 }
+
+
 
 double prob_triangular(double linear_vel, double angular_vel)
 {
