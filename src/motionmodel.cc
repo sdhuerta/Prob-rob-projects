@@ -43,7 +43,12 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 		  MapStruct *map,
 		  float dt )
 {
-	return veloctity_motion_model( st, stp, odom, map, dt );
+	MapCell curr, prev;
+
+	curr = st ;
+	prev = stp ;
+
+	return veloctity_motion_model( curr, prev, odom, map, dt );
 
 
 }
@@ -76,31 +81,34 @@ float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta
 	time_step = dt ; // We need to change this to take the header
 
 	v = odom.twist.twist.linear.x ;
-	w = -odom.twist.twist.angular.z ;
+	w = odom.twist.twist.angular.z ;
 
 	mu = 0.5 * ((x_prev - x_curr) * cos(theta_prev) + (y_prev - y_curr) * sin(theta_prev)) / ((y_prev - y_curr) * cos(theta_prev) - (x_prev - x_curr) * sin(theta_prev)) ;
 
-	if( mu == 0 ||  isnan(mu) || isinf(mu) )
-	{ 
-		col = (x_curr + x_prev)/2.0 + (y_prev - y_curr) ;
-		row = (y_curr + y_prev)/2.0 + (x_curr - x_prev) ;
-	}
-	else
-	{
-		col = (x_curr + x_prev)/2.0 + mu * (y_prev - y_curr) ;
-		row = (x_curr + x_prev)/2.0 + mu * (x_curr - x_prev) ;
-	}
+	col = (x_curr + x_prev)/2.0 + mu * (y_prev - y_curr) ;
+	row = (x_curr + x_prev)/2.0 + mu * (x_curr - x_prev) ;
 
 	dis = sqrt(pow(x_prev - col, 2) + pow(y_prev - row, 2)) ;
 
-	theta_del = atan2(y_curr - row, x_curr - col) - 
-				atan2(y_prev - row, x_prev - col);
+	if( isnan(dis) || isinf(dis) || dis > 100000 )
+	{
+		v_hat = 0 ;
+		w_hat = 0 ;
+		gamma_hat = 0;
+	}
+	else
+	{
+			
+		theta_del = atan2(y_curr - row, x_curr - col) - 
+					atan2(y_prev - row, x_prev - col);
 
-	v_hat = theta_del / time_step * dis ;
+		v_hat = theta_del / time_step * dis ;
 
-	w_hat = theta_del / time_step ;
+		w_hat = theta_del / time_step ;
 
-	gamma_hat =  (theta_curr - theta_prev) / time_step - w_hat ;
+		gamma_hat =  (theta_curr - theta_prev) / time_step - w_hat ;
+
+	}
 
 	prob_v = prob_gauss((v-v_hat), (ALPHA_1 * abs(v) + ALPHA_2 * abs(w))) ; 
 

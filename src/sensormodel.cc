@@ -87,84 +87,18 @@ double calc_p_rand()
 
 double ray_cast(MapCell &cell, double range, MapStruct *map) 
 {
+  if(map->rows[cell.row][cell.col] == 0)
+    return ;
   int x1, x2, y1, y2;
-  int dx1 = 0, dx2 = 0, dy1 = 0, dy2 = 0;
-  int short_side, long_side ;
-  int rise, run ;
-  float theta, r = 0;
 
-  x1 = cell.col;
-  y1 = map->height - cell.row;
+  x1 = cell.col ;
+  x2 = cos(cell.thata) * range ;
 
-  theta = -cell.theta ;
+  y1 = cell.row ;
+  y2 = sin(cell.theta) * range ;
 
-  x2 = cell.col + range * cos(theta) ;
-  y2 = cell.row + range * sin(theta) ;
+  dx = x1 - x2 ;
+  dy = y1 - y2 ;
 
-  rise = y2 - y1;
-  run = x2 - x1;
-
-  short_side = abs(rise) ;
-  long_side = abs(run) ;
-
-  if(short_side > long_side)
-  {
-    int temp = long_side ;
-    long_side = short_side ;
-    short_side = temp ;
-    if(rise < 0)
-      dy2 = -1 ;
-    else if( rise > 0)
-      dy2 = 1 ;
-
-    dx2 = 0 ;
-  }
-
-  if(run < 0)
-  {
-    dx2 = -1 ;
-    dx1 = -1 ;
-  }
-  else
-  {
-    dx2 = 1 ;
-    dx1 = 1 ;
-  }
-  if(rise < 0)
-    dy1 = -1;
-  else
-    dy1 = 1;
-
-  int numer = long_side >> 1 ;
-
-  for(int i = 0; i < long_side; i++ )
-  { 
-    // actual find
-    if(y1 > map->height - 1 || x1 > map->width - 1 ||
-       y1 < 0 || x1 < 0 || map->rows[y1][x1] == 0 )
-    {
-      r = sqrt(pow(cell.row - y1,2) + pow(cell.col - x1,2));
-
-      return r ;
-      
-    }
-
-    numer += short_side ;
-    if( numer >= long_side)
-    {
-      numer -= long_side ;
-      x1 += dx1 ;
-      y1 += dy1 ;
-    }
-    else
-    {
-      x1 += dx2 ;
-      y1 += dx2 ;
-    }
-  }
-
-  r = sqrt(pow(cell.row - y1,2) + pow(cell.col - x1,2));
-
-  return r ;
-
+  D = 2.0 * dy - dx ;
 }
