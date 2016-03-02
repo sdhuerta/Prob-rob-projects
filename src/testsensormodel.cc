@@ -101,7 +101,7 @@ int main(int argc,char **argv)
   for(ang=0;ang<NUM_ANGLES;ang++)
     for(row=0;row<height;row++)
       for(col=0;col<width;col++)
-  mapdata[ang][row][col] = 1.0;
+        mapdata[ang][row][col] = 1.0;
   
   while(fscanf(sensorfile,"%lf%lf",&theta,&r)==2)
     {
