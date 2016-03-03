@@ -1,4 +1,4 @@
-
+s
 #include <stdlib.h>
 #include <stdio.h>
 
@@ -72,18 +72,20 @@ float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta
 
 	int x_prev = stp.col;
 	int y_prev = stp.row;
-	float theta_prev = stp.theta;
+	float theta_prev = -stp.theta;
 
 	int x_curr = st.col;
 	int y_curr = st.row;
-	float theta_curr = st.theta;
+	float theta_curr = -st.theta;
 
 	time_step = dt ; // We need to change this to take the header
 
 	v = odom.twist.twist.linear.x ;
-	w = odom.twist.twist.angular.z ;
+	w = -odom.twist.twist.angular.z ;
 
-	mu = 0.5 * ((x_prev - x_curr) * cos(theta_prev) + (y_prev - y_curr) * sin(theta_prev)) / ((y_prev - y_curr) * cos(theta_prev) - (x_prev - x_curr) * sin(theta_prev)) ;
+	mu = 0.5 * ((x_prev - x_curr) * cos(theta_prev) + (y_prev - y_curr) * 
+		 sin(theta_prev)) / ((y_prev - y_curr) * cos(theta_prev) - 
+		 (x_prev - x_curr) * sin(theta_prev)) ;
 
 	col = (x_curr + x_prev)/2.0 + mu * (y_prev - y_curr) ;
 	row = (x_curr + x_prev)/2.0 + mu * (x_curr - x_prev) ;
@@ -97,8 +99,7 @@ float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta
 		gamma_hat = 0;
 	}
 	else
-	{
-			
+	{				
 		theta_del = atan2(y_curr - row, x_curr - col) - 
 					atan2(y_prev - row, x_prev - col);
 
@@ -117,7 +118,6 @@ float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta
 	prob_gamma = prob_gauss(gamma_hat, (ALPHA_5 * abs(v) + ALPHA_6 * abs(w)))	 ;
 
 	//printf( "%6.4lf %6.4lf %6.4lf \n", prob_v, prob_w, prob_gamma);
-
 
 	return prob_v * prob_w * prob_gamma ;
 }

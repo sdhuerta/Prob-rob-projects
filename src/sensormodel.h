@@ -22,6 +22,8 @@ using namespace geometry_msgs;
 #define ALPHA_3 0.1
 #define ALPHA_4 0.05
 
+#define MAX_RANGE 20.0
+
 
 #define PI 3.14159 
 
@@ -46,7 +48,8 @@ double calc_p_hit(double r, double r_hit);
 double calc_p_short(double r, double r_hit);
 double calc_p_max();
 double calc_p_rand();
-double ray_cast(MapCell &cell, double range, MapStruct *map) ;
+double ray_cast(MapCell &cell, MapStruct *map) ;
+double ray_cast2(MapCell &cell, MapStruct *map) ;
 
 double sensormodel(MapCell &cell, // pose of the robot
 		   double r,      // range reading
