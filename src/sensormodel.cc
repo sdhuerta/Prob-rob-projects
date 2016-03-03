@@ -111,7 +111,12 @@ double ray_cast(MapCell &cell, double range, MapStruct *map)
   int dy1 = 0 ;
   int dy2 = 0 ; 
 
-  theta = cell.theta ;
+  range = range * 100 / map->res;
+  //printf("%lf\n", range);
+
+  theta = -cell.theta ;
+
+  printf("%lf\n",theta);
 
   x1 = cell.col;
   x2 = sin(theta) * range + x1;
