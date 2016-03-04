@@ -24,22 +24,12 @@ double sensormodel(MapCell &cell, // pose of the robot
 		   MapStruct *map
 		   ) 
 {
-  // this is here just to give it something to do.  
-  // return (cell.row*cell.col)/(float)(map->width*map->height);
   double r_hit, p_hit, p_short, p_max, p_rand ;
 
-  // if(map->rows[cell.row][cell.col] == 0)
-  //   r_hit = 0 ;
-  // else
+  r_hit = ray_cast(cell, map) ;
 
-  r_hit = ray_cast2(cell, map) ;
-
-  if( r_hit > MAX_RANGE)
-    r_hit = MAX_RANGE ;
-
-  // printf("row: %d   col:%d   theta: %lf\n", cell.row, cell.col, cell.theta);
-
-  //printf("x: %5d y: %5d Theta: %6.4f r_hit: %6.4lf\n", cell.col, cell.row, cell.theta, r_hit);
+  if( r_hit > MAX)
+    r_hit = MAX ;
 
   p_hit = ALPHA_1 * calc_p_hit( r, r_hit ) ;
   p_short = ALPHA_2 * calc_p_short( r, r_hit ) ;
@@ -93,13 +83,13 @@ double calc_p_rand()
 }
 
 
-double ray_cast2(MapCell &cell, MapStruct *map)
+double ray_cast(MapCell &cell, MapStruct *map)
 {
   if( map->rows[cell.row][cell.col] == 0)
     return 0;
   int x,y;
   double theta = -cell.theta ;
-  double range = MAX_RANGE / map->res ;
+  double range = MAX / map->res ;
   int xstep, ystep ;
 
   int x0 = cell.col ;
@@ -137,7 +127,7 @@ double ray_cast2(MapCell &cell, MapStruct *map)
   for( ; x != x1; x += xstep)
   {
     if(x < 0 || x > map->width-1 || y < 0 || y > map->height-1)
-      return MAX_RANGE ;
+      return MAX ;
     else if( map->rows[y][x] == 0)
       return map->res * sqrt(pow(x-x0,2) + pow(y-y0,2)) ;
 
@@ -146,7 +136,7 @@ double ray_cast2(MapCell &cell, MapStruct *map)
     while( error >= 0.5 )
     {
       if(x < 0 || x > map->width-1 || y < 0 || y > map->height-1)
-        return MAX_RANGE ;
+        return MAX ;
       else if( map->rows[y][x] == 0)
         return map->res * sqrt(pow(x-x0,2) + pow(y-y0,2)) ;
 
@@ -155,108 +145,5 @@ double ray_cast2(MapCell &cell, MapStruct *map)
     }
   }
 
-//return MAX_RANGE ;
-}
-
-double ray_cast(MapCell &cell, MapStruct *map) 
-{
-  if( map->rows[cell.row][cell.col] == 0)
-    return 0;
-  int x1, x2, y1, y2, w, h;
-  int x, y;
-  int numer, longest, shortest ; 
-  double range ;
-  double theta, dis ;
-
-  int dx1 = 0 ;
-  int dx2 = 0 ;
-  int dy1 = 0 ;
-  int dy2 = 0 ; 
-
-  range = MAX_RANGE / map->res ;
-
-  //printf("%lf\n", range);
-
-  theta = -cell.theta ;
-
-  // printf("%lf\n",theta);
-
-  // Change range to MAX_RANGE
-
-  x1 = cell.col;
-  x2 = cos(theta) * range + x1;
-
-  y1 = cell.row;
-  y2 = sin(theta) * range + y1;
-
-  w = x2 - x1 ;
-  h = y2 - y1 ;
-
-  if( w < 0 )
-  {
-    dx1 = -1 ;
-    dx2 = -1 ;
-  }
-  else if( w > 0 )
-  {
-    dx1 = 1 ;
-    dx2 = 1 ;
-  }
-
-  if( h < 0 )
-    dy1 = -1 ;
-  else if( h > 0 )
-    dy1 = 1 ;
-
-  longest = abs(w) ;
-  shortest = abs(h) ;
-
-  if(!(longest > shortest))
-  {
-    longest = abs(h) ;
-    shortest = abs(w) ;
-    if( h < 0 )
-      dy2 = -1 ;
-    else if( h > 0 )
-      dy2 = 1 ;
-      dx2 = 0 ;
-  }
-
-  x = x1 ;
-  y = y1 ;
-
-  numer = longest >> 1 ; // divide by 2 ;
-
-  for( int i = 0; i < longest; i++ )
-  {
-    if( x >= map->width || x < 0 || y >= map->height || y < 0 )
-    {
-      return MAX_RANGE ;
-    }
-    else if(map->rows[y][x] == 0)
-    {
-      dis = sqrt(pow((x-x1),2) + pow((y-y1),2))-1;
-
-      return dis * map->res;
-    }
-
-    numer += shortest ;
-
-    if(!(numer < longest))
-    {
-      numer -= longest ;
-      x += dx1 ;
-      y += dy1 ;
-    }
-    else
-    {
-      x += dx2 ;
-      y += dy2 ;
-    }
-  }
-
-  dis = sqrt(pow((x-x1),2) + pow((y-y1),2));
-
-  return dis *map->res ;
-
+//return MAX ;
 }
