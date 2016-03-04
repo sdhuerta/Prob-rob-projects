@@ -76,29 +76,17 @@ float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta
 
 	// Coordinates of the center of turning radius
 	x = 0.5 * (stp.col + st.col) + mu * (stp.row - st.row) ;
-	y = 0.5 * (stp.row + st.row) + mu * (stp.col - st.col) ;
+	y = 0.5 * (stp.row + st.row) + mu * (st.col - stp.col) ;
 
 	// Distance from center of turning 
-	r = sqrt(pow(stp.col - x, 2.0) + pow(stp.row - y, 2.0)) / map->res;
+	r = sqrt(pow(stp.col - x, 2.0) + pow(stp.row - y, 2.0)) ;
 
-	if( isnan(r) || isinf(r) || r > 1000)
-	{
-		v_hat = sqrt(pow(st.col - stp.col, 2.0) + pow(st.row - stp.row, 2.0)) / dt ;
-		w_hat = 0 ;
-		g_hat = 0 ;
-	}
-	else
-	{
-		d_theta = atan2(st.row - y, st.col - x) - atan2(stp.row - y, stp.col - x) ;
+	d_theta = atan2(st.row - y, st.col - x) - atan2(stp.row - y, stp.col - x) ;
 
-		v_hat = d_theta / dt * r ;
-		w_hat = d_theta / dt ;
+	v_hat = d_theta / dt * r ;
+	w_hat = d_theta / dt ;
 
-		g_hat = (cur_theta - prev_theta) / dt - w_hat ;
-	}
-
-	v *= v ;
-	w *= w ;
+	g_hat = (cur_theta - prev_theta) / dt - w_hat ;
 
 	prob_one = prob_gauss(v-v_hat, 
 						  ALPHA_1 * v + ALPHA_2 * w);
@@ -106,18 +94,33 @@ float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta
 	prob_two = prob_gauss(w-w_hat, 
 		                  ALPHA_3 * v + ALPHA_4 * w);
 
-	prob_three = prob_gauss(g_hat, 
+	prob_three = prob_gauss(g_hat, 	
 		      				ALPHA_5 * v + ALPHA_6 * w);
 
-	return prob_two ; //  * prob_two * prob_three ;
+	return prob_one * prob_two * prob_three ;
 }
 
+// float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta)
+// 		  MapCell &stp,  // state at time t-1 (row, col, Theta)
+// 		  Odometry &odom, // odometry from t-1 to t 
+// 		  MapStruct *map,
+// 		  float dt )
+// {
+// 	double x,y,theta; // original positions
+// 	double x_p, y_p, theta_p; // possible next position
+// 	double v, w ; // hold our angular velocities
+// 	double v_hat, w_hat, g_hat ; // calculated expected values
+
+
+
+
+
+// }
 
 
 double prob_gauss(double a, double b)
 {
-
-	return exp( (-0.5) * (a / b)) / (sqrt( 2 * M_PI) * b ) ;
+	return exp( -0.5 * ((a*a)/(b*b))) / sqrt( 2 * M_PI * b * b ) ;
 }
 
 
