@@ -50,81 +50,94 @@ float motionmodel(MapCell &st,    // state at time t (row, col, Theta)
 	return veloctity_motion_model( curr, prev, odom, map, dt );
 }
 
+// Markov motion model estimates the probability of the current position
+// given our previous position, direction, and velocities
 float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta)
 		  MapCell &stp,  // state at time t-1 (row, col, Theta)
 		  Odometry &odom, // odometry from t-1 to t 
 		  MapStruct *map,
 		  float dt )
 {
-	if( map->rows[st.row][st.col] == 0 )
-		return 0 ;
+	Pose2D pose = CellToPose(map, stp) ;
+	Pose2D pose_p = CellToPose(map, st) ;
 
-	double mu ;
-	double prev_theta = stp.theta ;
-	double cur_theta = st.theta; 
-	double v, w, v_hat, w_hat, g_hat;
-	double x, y, r, d_theta ;
-	double prob_one, prob_two, prob_three;
-	double sig_v, sig_w, sig_g ;
+	double x,y,theta; // original positions
+	double x_p, y_p, theta_p; // possible next position
+	double v, w ; // hold our angular velocities
+	double v_hat, w_hat, g_hat ; // calculated expected values
+	double mu, r, r_str, x_str, y_str, theta_del ;
+	double prob_1, prob_2, prob_3 ;
 
+	// Original State
+	x = pose.x ;
+	y = pose.y ;
+	theta = pose.theta ;
+
+	// Possible Next State
+	x_p = pose_p.x ;
+	y_p = pose_p.y ;
+	theta_p = pose_p.theta ;
+
+	// Get our velocity readings
 	v = odom.twist.twist.linear.x ;
-	w = odom.twist.twist.angular.z ;
+	w = odom.twist.twist.angular.z ;	
 
-	mu = (stp.col - st.col) * cos(prev_theta) + (stp.row - st.row) * sin(prev_theta);
-	mu /= (stp.row - st.row) * cos(prev_theta) - (stp.col - st.col) * sin(prev_theta);
+	// Calculate mu
+	mu = (x - x_p) * cos(theta) + (y - y_p) * sin(theta) ;
+	mu /= ((y - y_p) * cos(theta) - (x - x_p) * sin(theta)) ;
 	mu *= 0.5 ;
 
-	// Coordinates of the center of turning radius
-	x = 0.5 * (stp.col + st.col) + mu * (stp.row - st.row) ;
-	y = 0.5 * (stp.row + st.row) + mu * (st.col - stp.col) ;
+	// if mu is either too large or isn't a number, we know that our 
+	// angular velocity is effectively zero, so we just need to calculate
+	// the velocity between poses and set angular to zero.
+	if( isnan(mu) || isinf(mu) )
+	{
+		v_hat = sqrt(pow(x-x_p,2.0) + pow(y-y_p,2.0)) / dt ;
+		w_hat = 0 ;
+		g_hat = 0 ;
+	}
+	else
+	{
+		// Let's get the center of our turn
+		x_str = (x + x_p) / 2.0 + mu * (y - y_p) ;
+		y_str = (y + y_p) / 2.0 + mu * (x_p - x) ;
 
-	// Distance from center of turning 
-	r = sqrt(pow(stp.col - x, 2.0) + pow(stp.row - y, 2.0)) ;
+		// calc the radius of the the turning circle
+		r_str = sqrt(pow(x - x_str, 2.0) + pow(y - y_str, 2.0)) ;
 
-	d_theta = atan2(st.row - y, st.col - x) - atan2(stp.row - y, stp.col - x) ;
+		// calculate our change in angle
+		theta_del = atan2(y_p - y_str, x_p - x_str) - atan2(y - y_str, x - x_str) ;
 
-	v_hat = d_theta / dt * r ;
-	w_hat = d_theta / dt ;
+		// calc our linear and angular velocities
+		v_hat = theta_del / dt * r_str ;
 
-	g_hat = (cur_theta - prev_theta) / dt - w_hat ;
+		w_hat = theta_del / dt ;
 
-	prob_one = prob_gauss(v-v_hat, 
-						  ALPHA_1 * v + ALPHA_2 * w);
+		g_hat = (theta_p - theta) / dt - w_hat ;
+	}
 
-	prob_two = prob_gauss(w-w_hat, 
-		                  ALPHA_3 * v + ALPHA_4 * w);
+	// STILL HAVING PROBLEMS WITH PROBABILITIES. There is an exception 
+	// not currently accounted for, causing severe distortion
 
-	prob_three = prob_gauss(g_hat, 	
-		      				ALPHA_5 * v + ALPHA_6 * w);
+	// grab the prob of that the our bot is in this current cell given 
+	// our calculated linear and angular velocities
+	prob_1 = prob_gauss(v-v_hat, ALPHA_1 * abs(v) + ALPHA_2 * abs(w));
 
-	return prob_one * prob_two * prob_three ;
+	prob_2 = prob_gauss(w-w_hat, ALPHA_3 * abs(v) + ALPHA_4 * abs(w));
+
+	prob_3 = prob_gauss(g_hat, ALPHA_5 * abs(v) + ALPHA_6 * abs(w));
+
+	return prob_1 * prob_2 * prob_3 ;
 }
 
-// float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta)
-// 		  MapCell &stp,  // state at time t-1 (row, col, Theta)
-// 		  Odometry &odom, // odometry from t-1 to t 
-// 		  MapStruct *map,
-// 		  float dt )
-// {
-// 	double x,y,theta; // original positions
-// 	double x_p, y_p, theta_p; // possible next position
-// 	double v, w ; // hold our angular velocities
-// 	double v_hat, w_hat, g_hat ; // calculated expected values
-
-
-
-
-
-// }
-
-
+// Grab the probability from a gaussian dist. 
 double prob_gauss(double a, double b)
 {
 	return exp( -0.5 * ((a*a)/(b*b))) / sqrt( 2 * M_PI * b * b ) ;
 }
 
 
-
+// More quickly grab a probablility, NOT DIALED IN
 double prob_triangular(double a, double b)
 {
 	a = sqrt(a) ;

@@ -146,7 +146,7 @@ int main(int argc,char **argv)
   {
     s_curr.row = row;
     s_curr.col = col;
-    s_curr.theta = ang * 2.0*M_PI / (NUM_ANGLES+1);
+    s_curr.theta = ang * M_PI / (NUM_ANGLES);
     tmp = motionmodel(s_curr, // next state
           s_initial, // initial state
           odom,   // action

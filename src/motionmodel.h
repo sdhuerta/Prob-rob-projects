@@ -7,12 +7,12 @@
 using namespace nav_msgs;
 using namespace geometry_msgs;
 
-#define ALPHA_1 5
-#define ALPHA_2 5
-#define ALPHA_3 0.5
-#define ALPHA_4 0.5
-#define ALPHA_5 0.5
-#define ALPHA_6 0.5
+#define ALPHA_1 .2
+#define ALPHA_2 .2
+#define ALPHA_3 .05
+#define ALPHA_4 .05
+#define ALPHA_5 .09
+#define ALPHA_6 .09
 
 /* 
    motionmodel calculates p(s_t|s_{t-1},a_{t-1},m)
@@ -32,6 +32,7 @@ float veloctity_motion_model(MapCell &st,    // state at time t (row, col, Theta
 		  MapStruct *map,
 		  float dt );
 
+// Functions to return a probility given center and noise
 double prob_triangular(double a, double b);
 double prob_gauss(double a, double b) ;
 
