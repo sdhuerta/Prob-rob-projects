@@ -24,7 +24,7 @@ void usage(char *name)
 {
   fprintf(stderr,"Usage: %s map_file res range_file\n",name);
   fprintf(stderr," map_file is a PNG file used as a map in"
-    " the stage simulator.\n");
+	  " the stage simulator.\n");
   fprintf(stderr," res is the width and height of each cell of the map, and \n");
   fprintf(stderr," range_file is a file of angle and range readings.\n");
   fprintf(stderr,"Distances are given in meters\n");
@@ -33,8 +33,6 @@ void usage(char *name)
 }
 
 
-
-#define NUM_ANGLES 36
 
 int main(int argc,char **argv)
 {
@@ -46,18 +44,17 @@ int main(int argc,char **argv)
   int res,dx,dy,a;
   int row,col,ang;
   double r,theta;
-  MapCell cell;
+  MapCoord cell;
   Pose pose;
 
   if(argc != 4)
     usage(argv[0]);
 
   /* read the occupancy grid map */
-  map = readmap(argv,1);
+  map = readmap(argv,1,36,atof(argv[2]));
   
   width = map->width;
   height = map->height;
-  map->res = atof(argv[2]);
   
 
   /* extract the base map file name without extension or path */
@@ -94,39 +91,37 @@ int main(int argc,char **argv)
       exit(25);
     }
 
-  mapdata = (float ***)malloc(NUM_ANGLES*sizeof(float**));
-  for(ang=0;ang<NUM_ANGLES;ang++)
+  mapdata = (float ***)malloc(map->nAngles*sizeof(float**));
+  for(ang=0;ang<map->nAngles;ang++)
     mapdata[ang] = allocate_float_map(width,height);
   
-  for(ang=0;ang<NUM_ANGLES;ang++)
+  for(ang=0;ang<map->nAngles;ang++)
     for(row=0;row<height;row++)
       for(col=0;col<width;col++)
-        mapdata[ang][row][col] = 1.0;
+	mapdata[ang][row][col] = 1.0;
   
   while(fscanf(sensorfile,"%lf%lf",&theta,&r)==2)
     {
-      for(ang=0;ang<NUM_ANGLES;ang++)
-      // for(ang=0;ang<1;ang++) //used for testing an individual angle
-      {
-        for(row=0;row<height;row++)
-          for(col=0;col<width;col++)
-            {
-              if(map->rows[row][col]>128)
-                {
-                  cell.row = row;
-                  cell.col = col;
-                  cell.theta = theta + ((ang*M_PI*2.0)/NUM_ANGLES);
-                  tmp = sensormodel(cell,r,map);
-                  if(tmp>=0.0)
-                    mapdata[ang][row][col] *= tmp;
-                  else
-                    mapdata[ang][row][col] = 0.0;
-                }
-              else
-                mapdata[ang][row][col] = 0.0;
-            }
-      }
-  
+      for(ang=0;ang<map->nAngles;ang++)
+	{
+	  for(row=0;row<height;row++)
+	    for(col=0;col<width;col++)
+	      {
+		if(map->rows[row][col]>128)
+		  {
+		    cell.row = row;
+		    cell.col = col;
+		    cell.angle = ang;
+		    tmp = sensormodel(cell,theta,r,map);
+		    if(tmp>=0.0)
+		      mapdata[ang][row][col] *= tmp;
+		    else
+		      mapdata[ang][row][col] = 0.0;
+		  }
+		else
+		  mapdata[ang][row][col] = 0.0;
+	      }
+	}
     }
 
   finalmapdata = allocate_float_map(width,height);
@@ -135,16 +130,16 @@ int main(int argc,char **argv)
       finalmapdata[row][col] = 0.0;
   
   
-  for(ang=0;ang<NUM_ANGLES;ang++)
+  for(ang=0;ang<map->nAngles;ang++)
     for(row=0;row<height;row++)
       for(col=0;col<width;col++)
-  finalmapdata[row][col]+= mapdata[ang][row][col];
+	finalmapdata[row][col]+= mapdata[ang][row][col];
 
   double max = finalmapdata[0][0];
   for(row=0;row<height;row++)
     for(col=0;col<width;col++)
       if(finalmapdata[row][col]>max)
-  max = finalmapdata[row][col];
+	max = finalmapdata[row][col];
 
   printf("max is %lf\n",max);
   for(row=0;row<height;row++)
@@ -156,7 +151,7 @@ int main(int argc,char **argv)
   for(row=0;row<height;row++)
     for(col=0;col<width;col++)
       if(map->rows[row][col]<128)
-  finalmapdata[row][col] = 1.0;
+	finalmapdata[row][col] = 1.0;
 
 
   //  sprintf(ofname,"%s%03d.pgm",basename,theta);

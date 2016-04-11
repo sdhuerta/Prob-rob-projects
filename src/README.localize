@@ -1,0 +1,28 @@
+
+
+Open a terminal and run
+"roscore"
+
+Open a second terminal and run
+"rosbag play --pause 2016-03-28-12-01-52.bag"
+
+Open a third terminal and run
+"devel/lib/sdsmt_slam/sdsmt_slam-localize maze.png"
+
+
+Go back to the second terminal and hit space to unpause, space to
+pause again, etc.
+
+NOTE: If there are two people running on the same machine at the same
+time, then you may need to specify an alternate port to roscore,
+rosbag, and /sdsmt_slam-localize.
+
+If so, choose a random number, <PORTNUM> that is greater than 20000.
+
+For roscore, just add the command line parameters:
+"roscore -p <PORTNUM>"
+
+Then in the other two terminals run
+"export ROS_MASTER_URI=http://localhost:<PORTNUM>/"
+before running rosbag or the localizer
+

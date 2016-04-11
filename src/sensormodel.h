@@ -9,24 +9,7 @@
 using namespace nav_msgs;
 using namespace geometry_msgs;
 
-// Stuff
-#define ETA 1.0
-#define B  0.1
-#define LAMBDA .2
-#define MAX 20.0
-#define MIN 2.0
-
-// Alpha values
-#define ALPHA_1 0.3
-#define ALPHA_2 0.5
-#define ALPHA_3 0.1
-#define ALPHA_4 0.05
-
-#define MAX_RANGE 20.0
-
-
-#define PI 3.14159 
-
+//#define SINGLERAY
 
 /* 
    sensormodel calculates p(s | z, m) 
@@ -34,23 +17,10 @@ using namespace geometry_msgs;
    r is the distance reading in meters (z)
 */
    
-typedef struct{
-  float z_hit;
-  float z_short;
-  float z_max;
-  float z_rand;
-  float phi_hit;
-  float lambda_short;
-}Theta ; 
 
 
-double calc_p_hit(double r, double r_hit);
-double calc_p_short(double r, double r_hit);
-double calc_p_max();
-double calc_p_rand();
-double ray_cast(MapCell &cell, MapStruct *map) ;
-
-double sensormodel(MapCell &cell, // pose of the robot
+double sensormodel(MapCoord &cell, // pose of the robot
+		   double theta,
 		   double r,      // range reading
 		   MapStruct *map);
 

@@ -2,43 +2,49 @@
 #define MAP_H
 
 #include <png.h>
-#include <ros/ros.h>
-#include <geometry_msgs/Pose.h>
-#include <ros/ros.h>
-#include <geometry_msgs/Pose.h>
+#include<ros/ros.h>
+#include<geometry_msgs/Pose.h>
 #include <geometry_msgs/Pose2D.h>
 using namespace ros;
 using namespace geometry_msgs;
 
-/* A simple structure for accessing a PNG image */
+/* A simple structure for accessing a PNG image map */
 typedef struct{
   int width,height;
   double res;
+  int nAngles;
   unsigned char **rows;
   png_structp png_ptr;
   png_infop info_ptr;
 }MapStruct;
 
-
 typedef struct{
-  int row;
-  int col;
-  float theta;
-  float value;
+  union{
+    struct{
+      int angle:8;
+      int row:12;
+      int col:12;
+    };
+    uint32_t key;
+  };
+}MapCoord;
+  
+typedef struct{
+  MapCoord coord;
+  double value;
 }MapCell;
 
-
 /* Convert Pose to map cell */
-MapCell PoseToCell(MapStruct *map, Pose2D &pose);
+MapCoord PoseToCell(MapStruct *map, Pose2D &pose);
 
 /* Convert map cell to Pose by finding the center point of the cell */
-Pose2D CellToPose(MapStruct *map, MapCell &cell);
+Pose2D CellToPose(MapStruct *map, MapCoord &cell);
 
 
 /* readmap will read a PNG file (used as a map) using argv[arg] as
    file name.  It does a lot of error checking and will exit if there
    are problems. */
-MapStruct* readmap(char **argv,int arg);
+MapStruct* readmap(char **argv,int arg,int nAngles,double res);
 
 /* These functions allocate and free a 2D array of floats */
 float** allocate_float_map(int width, int height);

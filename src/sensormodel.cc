@@ -1,15 +1,20 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-
+#include <string>
+using namespace std;
 #include <map.h>
 #include <sensormodel.h>
 
-// #include<geometry_msgs/Pose.h>
-// using namespace ros;
-// using namespace geometry_msgs;
+#include<geometry_msgs/Pose.h>
+using namespace ros;
+using namespace geometry_msgs;
 
 
+double sqr(double x)
+{
+  return x*x;
+}
 
 /* 
    sensormodel gives the probability of the pose being 'cell'
@@ -19,152 +24,182 @@
    r is in mm
 */
 
-double sensormodel(MapCell &cell, // pose of the robot 
+#define MAX_RANGE 20.0
+
+
+const double alpha[] = {0.3,0.5,0.1,0.05};
+
+double Phit(double r,double r_e)
+{
+  static const double b=0.1;
+  static const double NORM=1.0;
+  double e;
+  e = exp(-0.5*sqr(r-r_e)/b);
+  return NORM * e * (1.0/sqrt(2.0*M_PI*b));
+}
+
+double Punexp(double r,double r_e)
+{
+  static const double NORM=1.0;
+  static const double lambda=0.2;
+  if(r<r_e)
+    return NORM*lambda*exp(-lambda*r);
+  return 0.0;
+}
+
+
+double Prand(double r,double r_e)
+{
+  static const double NORM=1.0;
+  return NORM/MAX_RANGE;
+}
+
+double Pmax(double r,double r_e)
+{
+  static const double NORM=1.0;
+  static const double rsmall=2.0;
+  if(r>=MAX_RANGE)
+    return NORM/rsmall;
+  else
+    return 0.0;
+}
+
+
+
+double Pobs(double r,double r_e)
+{
+  // printf("Phit=%lf Punexp=%lf Pmax=%lf Prand=%lf\n",
+  // 	 Phit(r,r_e),
+  // 	 Punexp(r,r_e),
+  // 	 Pmax(r,r_e),
+  // 	 Prand(r,r_e)
+  // 	 );
+  
+  return
+    alpha[0]*Phit(r,r_e) +
+    alpha[1]*Punexp(r,r_e) +
+    alpha[2]*Pmax(r,r_e) +
+    alpha[3]*Prand(r,r_e);
+}
+
+
+#define THRESHOLD 127
+
+static int checkmap(MapStruct *map,int x,int y)
+{
+  int tmp=map->rows[y][x] ;
+#ifdef SINGLERAY
+  map->rows[y][x]=128; 
+#endif
+  if (tmp < THRESHOLD)
+    return 1;
+  return 0;
+}
+
+
+static double cast_ray(MapCoord &start,MapCoord &end,MapStruct *map)
+{
+  int
+    x0=start.col,
+    x0i=start.col,
+    x1=end.col,
+    y0=start.row,
+    y0i=start.row,
+    y1=end.row,
+    dx = abs(x1-x0),
+    sx = (x0<x1 ? 1 : -1),
+    dy = abs(y1-y0),
+    sy = (y0<y1 ? 1 : -1),
+    err = (dx>dy ? dx : -dy)/2,
+    e2,hit;
+
+  while((x0!=x1 || y0!=y1) &&
+	x0>0 &&
+	x0<map->width &&
+	y0>0 &&
+	y0<map->height &&
+	!(hit=checkmap(map,x0,y0)))
+    {
+      e2 = err;
+      if (e2 >-dx)
+	{
+	  err -= dy;
+	  x0 += sx;
+	}
+      if (e2 < dy)
+	{
+	  err += dx;
+	  y0 += sy;
+	}
+    }
+
+  if(hit)
+    return sqrt(sqr(x0-x0i-1.0)+sqr(y0-y0i-1.0))*map->res;
+  return MAX_RANGE;
+}
+
+// this function can be used to get some noise-free range data
+// for testing;
+void gimme_some_perfect_readings(MapCoord &cell, // pose of the robot
+				 MapStruct *map)
+{
+  Pose2D pose;
+  double theta,theta2;
+  MapCoord endpoint;
+  int i;
+  double r_e;
+  for(i=0;i<16;i++)
+    {
+      theta= (2*M_PI * i)/16.0;
+      pose = CellToPose(map,cell);
+      theta2 = theta + pose.theta;
+      pose.x = MAX_RANGE *  cos(theta2) + pose.x;
+      pose.y = MAX_RANGE * -sin(theta2) + pose.y;
+      endpoint = PoseToCell(map,pose);
+      r_e = cast_ray(cell,endpoint,map);
+      // Prints angle of sensor in robot frame and a simulated range reading
+      // Sensor is located at center of robot.
+      printf("%lf %lf\n",theta,r_e);
+    }
+}
+
+
+double sensormodel(MapCoord &cell, // pose of the sensor
+		   double theta,
 		   double r,     // range reading
 		   MapStruct *map
 		   ) 
 {
-  double r_hit, p_hit, p_short, p_max, p_rand ;
-
-  // consult our map and return the range to an obstacle
-  r_hit = ray_cast(cell, map) ;
-
-  // if our range is larger than the max, reduce to max
-  if( r_hit > MAX)
-    r_hit = MAX ;
-
-  // let's grab each prob, adjusted so that 
-  // our probs will add up to (almost) 1
-  p_hit = ALPHA_1 * calc_p_hit( r, r_hit ) ;
-  p_short = ALPHA_2 * calc_p_short( r, r_hit ) ;
-  p_max = ALPHA_3 * calc_p_max() ;
-  p_rand = ALPHA_4 * calc_p_rand() ;
-
-  // return that probability
-  return p_hit + p_short + p_max + p_rand ;
-}
-
-// Calculate the probability of hitting the expected
-// obstacle 
-double calc_p_hit(double r, double r_hit)
-{
-  double p_hit;
-  double e_term;
-
-  e_term = -.5 * pow((r - r_hit),2.0) / B ;
-
-  p_hit = ETA * 1 / sqrt(2 * PI * B) * exp(e_term) ;
-
-  return p_hit ;
-}
-
-// Calculate the probability of hitting an 
-// unexpected obstacle
-double calc_p_short(double r, double r_hit)
-{
-  if( r < r_hit )
-    return ETA * LAMBDA * exp(-LAMBDA * r); 
-  else
-    return 0;
-}
-
-// Calculate the probability of reaching
-// the limit of the range of our sensor
-double calc_p_max()
-{
-  double p_max;
-
-  p_max = ETA * 1.0 / MIN ;
-
-
-  return p_max ;
-}
-
-// Calculate the probability of
-// 
-double calc_p_rand()
-{
-  double p_rand;
-
-  p_rand = ETA * 1.0 / MAX ;
-
-  return p_rand;
-}
-
-
-double ray_cast(MapCell &cell, MapStruct *map)
-{
-  if( map->rows[cell.row][cell.col] == 0)
-    return 0;
-  int x,y;
-  double theta = -cell.theta ;
-  double range = MAX / map->res ;
-  int xstep, ystep ;
-
-  // calc our initial and end points
-  int x0 = cell.col ;
-  int x1 = round(cos(theta) * range) + x0 ;
-  int y0 = cell.row ;
-  int y1 = round(sin(theta) * range) + y0 ;
-
-  double d_error = 0 ; // hold our error
-  double dx = x1 - x0;
-  double dy = y1 - y0;
-  double error = 0; // hold accumulation of error
-
-  // calc our step on the x axis
-  if(dx < 0)
-    xstep = -1;
-  else if(dx > 0)
-    xstep = 1;
-  else
-    xstep = 0 ;
-
-  // calc our step on the y axis
-  if(dy < 0)
-    ystep = -1;
-  else if(dy > 0)
-    ystep = 1;
-  else
-    ystep = 0 ;
-
-  // determine our error constant
-  if(dx != 0)
-      d_error = abs(dy/dx) ;
-  else
-      d_error= 0 ;
-
-  // start our tracking points
-  // at the initial position
-  y = y0;
-  x = x0;
-
-  // walk out from our initial position
-  for( ; x != x1; x += xstep)
-  {
-    // if we step outside the map, that range will be set to the max range
-    if(x < 0 || x > map->width-1 || y < 0 || y > map->height-1)
-      return MAX ;
-    // if we hit an obstacle, then return the range
-    else if( map->rows[y][x] == 0)
-      return map->res * sqrt(pow(x-x0,2) + pow(y-y0,2)) ;
-
-    // add our rise error
-    error += d_error ;
-
-    // when our rise error becomes too high, let's step vertically
-    while( error >= 0.5 )
+  Pose2D pose;
+  MapCoord endpoint;
+  double r_e;
+  pose = CellToPose(map,cell);
+  pose.theta += theta;
+  pose.x = MAX_RANGE *  cos(pose.theta) + pose.x;
+  pose.y = MAX_RANGE * -sin(pose.theta) + pose.y;
+  endpoint = PoseToCell(map,pose);
+  r_e = cast_ray(cell,endpoint,map);
+  if(r_e>MAX_RANGE)
     {
-      // if we step outside the map, that range will be set to the max range
-      if(x < 0 || x > map->width-1 || y < 0 || y > map->height-1)
-        return MAX ;
-      // if we hit an obstacle, then return the range
-      else if( map->rows[y][x] == 0)
-        return map->res * sqrt(pow(x-x0,2) + pow(y-y0,2)) ;
-      // step in the y direction
-      y += ystep ;
-      // reduce the rise error
-      error -=  1.0 ; 
+      printf("r_e exceeds max: %lf\n",r_e);
+      return -1;
     }
-  }
-}
+  return Pobs(r,r_e);
+ }
+
+
+
+
+  // used for testing the components
+  // for(double j=0.0;j<=MAX_RANGE;j+=0.5)
+  //   {
+  //     for(double i=0.0;i<=MAX_RANGE;i+=0.5)
+  //       printf("%lf\n",Pobs(i,j));
+  // 	   printf("%lf\n",Phit(i,j));
+  // 	   printf("%lf\n",Punexp(i,j));
+  //       printf("%lf\n",Pmax(i,j));
+  //       printf("%lf\n",Prand(i,j));
+  //     printf("\n");
+  //   }
+  // exit(1);
+
