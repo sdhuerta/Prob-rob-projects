@@ -42,31 +42,37 @@ MapStruct *Map = NULL;
 // creates a new set of particles.
 void handleOdometry(const nav_msgs::Odometry &msg)
 {
-  double prob ;
-  double prob_sum =0;
-  vector<double> probabilities ;
-  Pose2D new_pose, old_pose ;
+  ROS_INFO("ENTERING ODOM") ;
+  nav_msgs::Odometry message = msg ;
+
   // Some debugging code...
   //
   // Odometry has a Printer, so you can just pass it to an ostream.
   // ROS_INFO_STREAM(msg);
   // or print only the fields that you care about.
-  ROS_INFO("dx=%lf dtheta=%lf\n",msg.twist.twist.linear.x,
+  ROS_INFO("dx=%lf dtheta=%lf",msg.twist.twist.linear.x,
 	   msg.twist.twist.angular.z);
 
   // Normalize the importance rankings (must sum to one)
   // \forall p \in Particles do .... done
 
   // \forall p \in Particles do .... done
+
+  ROS_INFO("POSITION x = %lf y = %lf", Particles[0].pose.x, Particles[0].pose.y);
+
   for(int i = 0; i < Particles.size(); i++)
   {
-    Particles[i].pose = new_pose = samplemotionmodel(Particles[i].pose, msg, Map, 0.1) ;
+    Particles[i].prob = 0.0 ;
+
+    Particles[i].pose = samplemotionmodel(Particles[i].pose, message, Map, 0.1) ;
   }
 
   // Generate new particles stochastically based on their importance ranking.
   // \forall p \in Particles do .... done
 
-  // Replace old set of particles with new set of particles.
+  ROS_INFO("LEAVING ODOM\n")  ;
+
+
 }
 
 
@@ -75,6 +81,7 @@ void handleOdometry(const nav_msgs::Odometry &msg)
 // well it matches the scan.
 void handleScan(const sensor_msgs::LaserScan &msg)
 {
+  ROS_INFO("ENTERING SCAN") ;
 
   // Some debugging code...
   //
@@ -84,11 +91,13 @@ void handleScan(const sensor_msgs::LaserScan &msg)
   int nscans;
   // stringstream ss;
   nscans=(msg.angle_max-msg.angle_min)/msg.angle_increment;
+  ParticleSet New_Particles ;
+  particle new_particle ;
   MapCoord cell ;
   int r ;
   double theta ;
-  double prob, temp ;
-  double sum = 0.0 ;
+  double prob, temp, pick ;
+  double particles_sum = 0.0 ;
   // for(i=0;i<nscans;i++)
   // {
   //   //ss<<" "<<msg.ranges[i];
@@ -101,32 +110,60 @@ void handleScan(const sensor_msgs::LaserScan &msg)
   // Remember to account for the offset of the sensor relative to the
   // center of the robot for each particle.
   // \forall p \in Particles do .... done
+  // ROS_INFO_STREAM("HEY THERE\n");
+  ROS_INFO("I DIED 1") ;
+
   for(int i = 0; i < Particles.size(); i++)
   {
-    cell.row = Particles[i].pose.row;
-    cell.col = Particles[i].pose.col;
-    cell.angle = Particles[i].theta
-    for(int j = 0; j < nscans; j++)
+    cell.row = Particles[i].pose.x;
+    cell.col = Particles[i].pose.y;
+    cell.angle = Particles[i].pose.theta;
+    for(int j = 0; j < nscans; j = j + 40)
     {
-      r = msg.ranges[j]
+      r = msg.ranges[j] ;
       theta = msg.angle_min + j * msg.angle_increment ;      
-      temp = sensormodel(cell, theta, r, Map);
+      temp = sensormodel(cell, theta, r, Map) / .1;
       if(temp > 0.0)
-        prob *= 0.0;
+        prob *= temp;
       else
         prob = 0.0; 
     }
-    sum += prob ;
+    particles_sum += prob ;
     Particles[i].prob = prob; 
   }
 
+  ROS_INFO("I DIED 2 PROB SUM: %lf", particles_sum) ;
+
   for(int i = 0; i < Particles.size(); i++)
   {
-    while(Particles[i].prob == 0.0)
-      Particles.erase(Particles.begin() + i) ;
+    pick = (rand() % Particles.size()) / Particles.size() ;
 
-    Particles[i].prob = prob / sum ;
+    int j = 0 ;
+    double sum = 0;
+
+    while( sum < pick )
+    {
+      sum += (Particles[j].prob / particles_sum);
+      j++ ;
+    }
+
+    new_particle.pose = Particles[j].pose ;
+    new_particle.prob = Particles[j].prob ;
+
+    New_Particles.push_back(new_particle) ;
   }
+
+  ROS_INFO("I DIED 3") ;
+
+  Particles.clear();
+
+    // Replace old set of particles with new set of particles.
+  for(int i = 0; i < New_Particles.size(); i++)
+  {
+    Particles.push_back(New_Particles[i]);
+  }
+
+  ROS_INFO("LEAVING SCAN\n") ;
 }
 
 
@@ -143,10 +180,11 @@ void handleRange(const sensor_msgs::Range &msg)
 
 int main(int argc,char **argv)
 {
+  srand(time(NULL));
   //Initialize the ROS system and become a node.
   ros::init(argc,argv,"localize");
   ros::NodeHandle nh;
-  ros::Rate loop_rate(10);
+  ros::Rate loop_rate(5);
 
   //Create the subscriber objects.
   ros::Subscriber odom=nh.subscribe("odom",100,&handleOdometry);
@@ -172,16 +210,16 @@ int main(int argc,char **argv)
   Map = readmap(argv,1,NUM_ANGLES,0.1);
 
   // Initialize our particles
-  for(int ang = 0; ang < Map->nAngles; ang++)
-    for(int row = 0; row < Map->height; row++)
-      for(int col = 0; col < Map->width; col++)
+  for(int ang = 0; ang < Map->nAngles; ang = ang + 4)
+    for(int row = 0; row < Map->height; row = row + 2)
+      for(int col = 0; col < Map->width; col = col + 2)
         {
           if(Map->rows[row][col] > 128)
           {
             particle new_particle ;
 
-            new_particle.pose.row = row ;
-            new_particle.pose.col = col ;
+            new_particle.pose.x = row ;
+            new_particle.pose.y = col ;
             new_particle.pose.theta = ang ;
             new_particle.prob = 1.0 ;
 
