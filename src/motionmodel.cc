@@ -1,3 +1,11 @@
+/*
+  Original Author: Dr. Pyeatt
+  Corrections made by: Daniel Nix
+
+  This file began as Dr. Pyeatt's solution to the sensor model
+  but I found errors and (I think) I fixed them.
+
+*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -231,16 +239,15 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
   ratio=vhat/what;
   if(isnan(ratio)||isinf(ratio)||(fabs(ratio)>1e6))
     {
-      ratio = 1.0;
-      // result.x = st.x;
-      // result.y = st.y;
-      // result.theta = st.theta + ghat*dt;
+      // ratio = 1.0;
+      result.x = st.x + v*dt*cos(st.theta);
+      result.y = st.y + v*dt*sin(st.theta);
+      result.theta = st.theta + ghat*dt;
     }
   else
     {
       result.x = st.x - ratio*sin(st.theta) + ratio*sin(st.theta+what*dt);
-      // result.y = st.y - ratio*cos(st.theta) + ratio*cos(st.theta+what*dt);
-      result.y = st.y - ratio*cos(st.theta) + ratio*cos(st.theta+what*dt);
+      result.y = st.y + ratio*cos(st.theta) - ratio*cos(st.theta+what*dt);
       result.theta = st.theta + (what+ghat)*dt;
     }
       
