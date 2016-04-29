@@ -210,6 +210,7 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
 			 MapStruct *map,
 			 float dt)
 {
+  printf("IN THE FUNC\n");
   double v,w,vs,ws,vhat,what,ghat;
   double sigma1,sigma2,sigma3,ratio;
   Pose2D result;
@@ -225,6 +226,7 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
       result.x = st.x;
       result.y = st.y;
       result.theta = st.theta;
+      printf("LEAVING THE FUNC1\n");
       return result;
     }
 
@@ -232,9 +234,11 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
   sigma2 = malpha[2]*vs + malpha[3]*ws;
   sigma3 = malpha[4]*vs + malpha[5]*ws;
   
+  printf("before ziggy\n");
   vhat = v + gsl_ran_gaussian_ziggurat(rng1,sigma1);
   what = w + gsl_ran_gaussian_ziggurat(rng2,sigma2);
   ghat = gsl_ran_gaussian_ziggurat(rng3,sigma3);
+  printf("after ziggy\n");
 
   ratio=vhat/what;
   if(isnan(ratio)||isinf(ratio)||(fabs(ratio)>1e6))
@@ -250,6 +254,8 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
       result.y = st.y + ratio*cos(st.theta) - ratio*cos(st.theta+what*dt);
       result.theta = st.theta + (what+ghat)*dt;
     }
+
+    printf("LEAVING THE FUNC2\n");
       
   return result;
 }
