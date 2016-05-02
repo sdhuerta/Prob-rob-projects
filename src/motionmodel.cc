@@ -1,11 +1,3 @@
-/*
-  Original Author: Dr. Pyeatt
-  Corrections made by: Daniel Nix
-
-  This file began as Dr. Pyeatt's solution to the sensor model
-  but I found errors and (I think) I fixed them.
-
-*/
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -210,7 +202,6 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
 			 MapStruct *map,
 			 float dt)
 {
-  printf("IN THE FUNC\n");
   double v,w,vs,ws,vhat,what,ghat;
   double sigma1,sigma2,sigma3,ratio;
   Pose2D result;
@@ -226,7 +217,6 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
       result.x = st.x;
       result.y = st.y;
       result.theta = st.theta;
-      printf("LEAVING THE FUNC1\n");
       return result;
     }
 
@@ -234,16 +224,14 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
   sigma2 = malpha[2]*vs + malpha[3]*ws;
   sigma3 = malpha[4]*vs + malpha[5]*ws;
   
-  printf("before ziggy\n");
   vhat = v + gsl_ran_gaussian_ziggurat(rng1,sigma1);
   what = w + gsl_ran_gaussian_ziggurat(rng2,sigma2);
   ghat = gsl_ran_gaussian_ziggurat(rng3,sigma3);
-  printf("after ziggy\n");
 
   ratio=vhat/what;
   if(isnan(ratio)||isinf(ratio)||(fabs(ratio)>1e6))
     {
-      // ratio = 1.0;
+      ratio = 1.0;
       result.x = st.x + v*dt*cos(st.theta);
       result.y = st.y + v*dt*sin(st.theta);
       result.theta = st.theta + ghat*dt;
@@ -251,11 +239,10 @@ Pose2D samplemotionmodel(Pose2D &st,    // state at time t
   else
     {
       result.x = st.x - ratio*sin(st.theta) + ratio*sin(st.theta+what*dt);
-      result.y = st.y + ratio*cos(st.theta) - ratio*cos(st.theta+what*dt);
+      // result.y = st.y - ratio*cos(st.theta) + ratio*cos(st.theta+what*dt);
+      result.y = st.y - ratio*cos(st.theta) + ratio*cos(st.theta+what*dt);
       result.theta = st.theta + (what+ghat)*dt;
     }
-
-    printf("LEAVING THE FUNC2\n");
       
   return result;
 }

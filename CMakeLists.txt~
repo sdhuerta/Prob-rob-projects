@@ -6,14 +6,7 @@ project(sdsmt_slam)
 ## is used, also find other catkin packages
 #find_package(catkin REQUIRED COMPONENTS rosconsole roscpp)
 
-find_package(catkin REQUIRED COMPONENTS 
-  rosconsole 
-  roscpp
-  rospy
-  std_msgs
-  geometry_msgs
-  message_generation
-  )
+find_package(catkin REQUIRED COMPONENTS rosconsole roscpp)
 
 ## System dependencies are found with CMake's conventions
 #find_package(REQUIRED COMPONENTS system)
@@ -44,20 +37,18 @@ find_package(catkin REQUIRED COMPONENTS
 ##   * add "message_generation" and every package in MSG_DEP_SET to
 ##     find_package(catkin REQUIRED COMPONENTS ...)
 ##   * add "message_runtime" and every package in MSG_DEP_SET to
-       # catkin_package(
-       #  CATKIN_DEPENDS message_runtime
-       #  )
+##     catkin_package(CATKIN_DEPENDS ...)
 ##   * uncomment the add_*_files sections below as needed
 ##     and list every .msg/.srv/.action file to be processed
 ##   * uncomment the generate_messages entry below
 ##   * add every package in MSG_DEP_SET to generate_messages(DEPENDENCIES ...)
 
 ## Generate messages in the 'msg' folder
-add_message_files(
-  FILES
-  Particle.msg
-  Particle_vector.msg
-)
+# add_message_files(
+#   FILES
+#   Message1.msg
+#   Message2.msg
+# )
 
 ## Generate services in the 'srv' folder
 # add_service_files(
@@ -74,11 +65,10 @@ add_message_files(
 # )
 
 ## Generate added messages and services with any dependencies listed here
-generate_messages(
-  DEPENDENCIES
-  std_msgs  # Or other packages containing msgs
-  geometry_msgs
-)
+# generate_messages(
+#   DEPENDENCIES
+#   std_msgs  # Or other packages containing msgs
+# )
 
 ################################################
 ## Declare ROS dynamic reconfigure parameters ##
@@ -110,11 +100,10 @@ generate_messages(
 ## CATKIN_DEPENDS: catkin_packages dependent projects also need
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
- #INCLUDE_DIRS include
- LIBRARIES sdsmt_slam
- CATKIN_DEPENDS message_runtime roscpp rospy std_msgs geometry_msgs
- DEPENDS system_lib
- DEPENDS message_runtime
+#  INCLUDE_DIRS include
+#  LIBRARIES sdsmt_slam
+#  CATKIN_DEPENDS other_catkin_pkg
+#  DEPENDS system_lib
 )
 
 ###########
@@ -148,8 +137,7 @@ set_target_properties(sdsmt_slam PROPERTIES LINK_FLAGS "-g -O2 -ofast -olto")
 ## Add cmake target dependencies of the library
 ## as an example, code may need to be generated before libraries
 ## either from message generation or dynamic reconfigure
-add_dependencies(sdsmt_slam ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(sdsmt_slam msg_pkg_generate_messages_cpp)
+# add_dependencies(sdsmt_slam ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 
 ## Declare a C++ executable
 #add_executable(sdsmt_slam_node src/sdsmt_slam_node.cpp)
@@ -157,13 +145,13 @@ add_dependencies(sdsmt_slam msg_pkg_generate_messages_cpp)
 add_executable(${PROJECT_NAME}-testsensormodel src/testsensormodel.cc)
 add_dependencies(${PROJECT_NAME}-testsensormodel ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}-testsensormodel
-  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl -lgslcblas
+  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl
   )
 
 add_executable(${PROJECT_NAME}-testmotionmodel src/testmotionmodel.cc)
 add_dependencies(${PROJECT_NAME}-testmotionmodel ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}-testmotionmodel
-  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl -lgslcblas
+  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl
   )
 set_target_properties(sdsmt_slam-testmotionmodel PROPERTIES COMPILE_FLAGS "-g -Wall")
 set_target_properties(sdsmt_slam-testmotionmodel PROPERTIES LINK_FLAGS "-g")
@@ -171,7 +159,7 @@ set_target_properties(sdsmt_slam-testmotionmodel PROPERTIES LINK_FLAGS "-g")
 add_executable(${PROJECT_NAME}-testsamplemotionmodel src/testsamplemotionmodel.cc)
 add_dependencies(${PROJECT_NAME}-testsamplemotionmodel ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}-testsamplemotionmodel
-  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl -lgslcblas
+  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl
   )
 set_target_properties(sdsmt_slam-testsamplemotionmodel PROPERTIES COMPILE_FLAGS "-g -Wall")
 set_target_properties(sdsmt_slam-testsamplemotionmodel PROPERTIES LINK_FLAGS "-g")
@@ -179,7 +167,7 @@ set_target_properties(sdsmt_slam-testsamplemotionmodel PROPERTIES LINK_FLAGS "-g
 add_executable(${PROJECT_NAME}-buildtransfunc src/buildtransfunc.cc)
 add_dependencies(${PROJECT_NAME}-buildtransfunc ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}-buildtransfunc
-  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl -lgslcblas
+  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl
   )
 set_target_properties(sdsmt_slam-buildtransfunc PROPERTIES COMPILE_FLAGS "-g -Wall")
 set_target_properties(sdsmt_slam-buildtransfunc PROPERTIES LINK_FLAGS "-g")
@@ -187,7 +175,7 @@ set_target_properties(sdsmt_slam-buildtransfunc PROPERTIES LINK_FLAGS "-g")
 add_executable(${PROJECT_NAME}-dumptransfunc src/dumptransfunc.cc)
 add_dependencies(${PROJECT_NAME}-dumptransfunc ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}-dumptransfunc
-  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl -lgslcblas
+  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl
   )
 set_target_properties(sdsmt_slam-dumptransfunc PROPERTIES COMPILE_FLAGS "-g -Wall")
 set_target_properties(sdsmt_slam-dumptransfunc PROPERTIES LINK_FLAGS "-g")
@@ -196,7 +184,7 @@ set_target_properties(sdsmt_slam-dumptransfunc PROPERTIES LINK_FLAGS "-g")
 add_executable(${PROJECT_NAME}-planner src/planner.cc)
 add_dependencies(${PROJECT_NAME}-planner ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}-planner
-  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl -lgslcblas
+  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl
   )
 set_target_properties(sdsmt_slam-planner PROPERTIES COMPILE_FLAGS "-g -Wall")
 set_target_properties(sdsmt_slam-planner PROPERTIES LINK_FLAGS "-g")
@@ -205,7 +193,7 @@ set_target_properties(sdsmt_slam-planner PROPERTIES LINK_FLAGS "-g")
 add_executable(${PROJECT_NAME}-localize src/localize.cc)
 add_dependencies(${PROJECT_NAME}-localize ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
 target_link_libraries(${PROJECT_NAME}-localize
-  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl -lgslcblas
+  ${catkin_LIBRARIES} sdsmt_slam -lpng -lgsl
   )
 
 ## Add cmake target dependencies of the executable

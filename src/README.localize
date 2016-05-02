@@ -9,6 +9,8 @@ Open a second terminal and run
 Open a third terminal and run
 "devel/lib/sdsmt_slam/sdsmt_slam-localize maze.png"
 
+sdsmt_slam-localize will generate image files in the Image folder with
+the convention Frame#0.pgm
 
 Go back to the second terminal and hit space to unpause, space to
 pause again, etc.
@@ -26,3 +28,4 @@ Then in the other two terminals run
 "export ROS_MASTER_URI=http://localhost:<PORTNUM>/"
 before running rosbag or the localizer
 
+ls

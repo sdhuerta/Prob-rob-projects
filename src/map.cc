@@ -1,12 +1,4 @@
-/*
-  Original Author: Dr. Pyeatt
-  Corrections made by: Daniel Nix
 
-  I didn't know where the origin for Pyeatt's coordinates are located
-  but I defined (0,0) as the center of the map. Poses are in mathematical
-  coordinates (+x right, +y up, +theta ccw from +x axis).
-
-*/
 
 /* system headers */
 #include <png.h>
@@ -132,9 +124,8 @@ MapCoord PoseToCell(MapStruct *map, Pose2D &pose)
   cell.angle = round(tt * map->nAngles / (2.0 * M_PI));
   if(cell.angle >= map->nAngles)
     cell.angle=0;
-
-  cell.col = round(pose.x/map->res+0.5*map->width-0.5);
-  cell.row = round(map->height - (pose.y/map->res+0.5*map->height-0.5));
+  cell.col = round(pose.x/map->res-0.5);
+  cell.row = round(pose.y/map->res-0.5);
   if(cell.col >= map->width)
     cell.col = map->width-1;
   if(cell.row >= map->height)
@@ -143,7 +134,6 @@ MapCoord PoseToCell(MapStruct *map, Pose2D &pose)
     cell.col = 0;
   if(cell.row < 0)
     cell.row = 0;
-
   return cell;
 }
 
@@ -151,15 +141,9 @@ MapCoord PoseToCell(MapStruct *map, Pose2D &pose)
 Pose2D CellToPose(MapStruct *map, MapCoord &cell)
 {
   Pose2D pose;
-  pose.x = (cell.col-0.5*map->width) * map->res + 0.5*map->res;
-  pose.y = -(cell.row-0.5*map->width) * map->res + 0.5*map->res;
-  
+  pose.x = cell.col * map->res + 0.5*map->res;
+  pose.y = cell.row * map->res + 0.5*map->res;
   pose.theta = (cell.angle * 2.0 * M_PI)/map->nAngles;
-  while( pose.theta > M_PI )
-    pose.theta -= 2.0*M_PI;
-  while( pose.theta < -M_PI )
-    pose.theta += 2.0*M_PI;
-
   return pose;
 }
 

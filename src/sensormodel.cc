@@ -1,14 +1,4 @@
-/*
-  Original Author: Dr. Pyeatt
-  Corrections made by: Daniel Nix
 
-  This file began as Dr. Pyeatt's solution to the sensor model
-  but I found errors and (I think) I fixed them.
-
-
-  I haven't messed with alpha values but I think they may need
-  to be changed to account for the new MAX_RANGE
-*/
 #include <stdlib.h>
 #include <stdio.h>
 #include <string>
@@ -34,7 +24,7 @@ double sqr(double x)
    r is in mm
 */
 
-#define MAX_RANGE 5.0
+#define MAX_RANGE 20.0
 
 
 const double alpha[] = {0.3,0.5,0.1,0.05};
@@ -185,19 +175,15 @@ double sensormodel(MapCoord &cell, // pose of the sensor
   double r_e;
   pose = CellToPose(map,cell);
   pose.theta += theta;
-  pose.x = MAX_RANGE * cos(pose.theta) + pose.x;
-  pose.y = MAX_RANGE * sin(pose.theta) + pose.y;
+  pose.x = MAX_RANGE *  cos(pose.theta) + pose.x;
+  pose.y = MAX_RANGE * -sin(pose.theta) + pose.y;
   endpoint = PoseToCell(map,pose);
   r_e = cast_ray(cell,endpoint,map);
   if(r_e>MAX_RANGE)
     {
-      // printf("r_e exceeds max: %lf\n",r_e);
-      return Pobs(r,MAX_RANGE);
+      printf("r_e exceeds max: %lf\n",r_e);
+      return -1;
     }
-
-  // printf("Ray from pose (%f, %f, %f) (%d, %d) to (%d, %d)
-  //       range reading: %lf\n",
-  //        r_e);
   return Pobs(r,r_e);
  }
 
